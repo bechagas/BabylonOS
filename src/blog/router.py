@@ -6,7 +6,7 @@ router = APIRouter(
     tags=['posts']
 )
 
-@router.get('', status_code=status.HTTP_200_OK)
+@router.get('/', status_code=status.HTTP_200_OK)
 async def get_posts(db: db_dependency):
     return
 
@@ -26,6 +26,6 @@ async def update_all_post(id: int, db: db_dependency):
 async def update_post(id: int, db: db_dependency):
     return
 
-@router.get('/{id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_post(id: int, db: db_dependency):
     return
