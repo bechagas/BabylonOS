@@ -7,6 +7,9 @@ wheels/
 *.egg-info
 __init__.py
 
+# Sqlite-generated files
+babylonOS.db
+
 # Virtual environments
 .venv
 .env
