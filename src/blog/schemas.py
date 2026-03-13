@@ -1,6 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime
-from typing import Optional
 
 class PostBase(BaseModel):
     title: str = Field(min_length=1, max_length=50)
@@ -10,8 +9,8 @@ class PostCreate(PostBase):
     pass
 
 class PostUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
+    title: str | None = Field(default=None, min_length=1, max_length=50)
+    content: str | None = Field(default=None, min_length=1)
 
 class PostResponse(PostBase):
     model_config = ConfigDict(from_attributes=True)

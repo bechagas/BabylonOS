@@ -1,9 +1,16 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
 from .database.config import Base, engine
 from .blog.router import router as blog_router
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    await engine.dispose()
 
-Base.metadata.create_all(bind=engine)
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(blog_router)

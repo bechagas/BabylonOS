@@ -1,82 +1,37 @@
-from fastapi import APIRouter, HTTPException, status
-from ..database.session import db_dependency
+from fastapi import APIRouter, Depends, status
+from typing import Annotated
 
-from .model import Post
 from .schemas import PostCreate, PostUpdate, PostResponse
+from .services import get_post_service, PostService
 
 router = APIRouter(
     prefix='/api/blog/posts',
-    tags=['posts']
+    tags=['Posts']
 )
 
+service_dependency = Annotated[PostService, Depends(get_post_service)]
+
 @router.get('/', response_model=list[PostResponse], status_code=status.HTTP_200_OK)
-async def get_posts(db: db_dependency):
-    return db.query(Post).all()
+async def get_posts(service: service_dependency):
+    return await service.get_all_posts()
 
-@router.get('/{id}', response_model=PostResponse, status_code=status.HTTP_200_OK)
-async def get_post(id: int, db: db_dependency):
-    db_post = db.query(Post).filter(Post.id == id).first()
+@router.get('/{post_id}', response_model=PostResponse, status_code=status.HTTP_200_OK)
+async def get_post(post_id: int, service: service_dependency):
+    return await service.get_post_by_id(post_id)
 
-    if not db_post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found!"
-        )
-    
-    return db_post
 
-@router.post('/', status_code=status.HTTP_201_CREATED)
-async def create_post(db: db_dependency, post: PostCreate):
-    new_post = Post(
-        title=post.title,
-        content=post.content
-    )
+@router.post('/', response_model=PostResponse, status_code=status.HTTP_201_CREATED)
+async def create_post(post: PostCreate, service: service_dependency):
+    return await service.create_new_post(post)
 
-    db.add(new_post)
-    db.commit()
-    db.refresh(new_post)
+@router.put('/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def update_all_post(post_id: int, post: PostCreate, service: service_dependency):
+    await service.update_post_full(post_id, post)
 
-@router.put('/{id}', status_code=status.HTTP_204_NO_CONTENT)
-async def update_all_post(id: int, db: db_dependency, post: PostCreate):
-    db_post = db.query(Post).filter(Post.id == id).first()
+@router.patch('/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def update_post(post_id: int, post: PostUpdate, service: service_dependency):
+    await service.update_post_partial(post_id, post)
 
-    if not db_post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found!"
-        )
-    
-    db_post.title = post.title
-    db_post.content = post.content
-
-    db.commit()
-
-@router.patch('/{id}', status_code=status.HTTP_204_NO_CONTENT)
-async def update_post(id: int, db: db_dependency, post: PostUpdate):
-    db_post = db.query(Post).filter(Post.id == id).first()
-
-    if not db_post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found!"
-        )
-
-    update_post = post.model_dump(exclude_unset=True)
-
-    for key, value in update_post.items():
-        setattr(db_post, key, value)
-
-    db.commit()
-
-@router.delete('/{id}', status_code=status.HTTP_204_NO_CONTENT)
-async def delete_post(id: int, db: db_dependency):
-    db_post = db.query(Post).filter(Post.id == id).first()
-
-    if not db_post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Post not found!"
-        )
-    
-    db.delete(db_post)
-    db.commit()
+@router.delete('/{post_id}', status_code=status.HTTP_204_NO_CONTENT)
+async def delete_post(post_id: int, service: service_dependency):
+    await service.delete_post(post_id)
